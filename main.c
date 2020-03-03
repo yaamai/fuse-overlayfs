@@ -519,7 +519,7 @@ is_directory_opaque (struct ovl_layer *l, const char *path)
           if (l->ds->file_exists (l, whiteout_opq_path) == 0)
             return 1;
 
-          return (errno == ENOENT) ? 0 : -1;
+          return (errno == ENOENT || errno == EINVAL) ? 0 : -1;
         }
       return -1;
     }
@@ -1236,7 +1236,7 @@ make_ovl_node (struct ovl_data *lo, const char *path, struct ovl_layer *layer, c
               int r;
 
               r = it->ds->file_exists (it, whiteout_path);
-              if (r < 0 && errno != ENOENT && errno != ENOTDIR)
+              if (r < 0 && errno != ENOENT && errno != ENOTDIR && errno != EINVAL)
                return NULL;
 
               if (r == 0)
@@ -1427,7 +1427,7 @@ load_dir (struct ovl_data *lo, struct ovl_node *n, struct ovl_layer *layer, char
         stop_lookup = true;
 
       ret = it->ds->file_exists (it, parent_whiteout_path);
-      if (ret < 0 && errno != ENOENT && errno != ENOTDIR)
+      if (ret < 0 && errno != ENOENT && errno != ENOTDIR && errno != EINVAL)
         return NULL;
 
       if (ret == 0)
@@ -1481,7 +1481,7 @@ load_dir (struct ovl_data *lo, struct ovl_node *n, struct ovl_layer *layer, char
           strconcat3 (node_path, PATH_MAX, n->path, "/", dent->d_name);
 
           ret = it->ds->file_exists (it, whiteout_path);
-          if (ret < 0 && errno != ENOENT && errno != ENOTDIR)
+          if (ret < 0 && errno != ENOENT && errno != ENOTDIR && errno != EINVAL)
             {
               it->ds->closedir (dp);
               return NULL;
@@ -5215,6 +5215,7 @@ main (int argc, char *argv[])
       if (path == NULL)
         goto err_out1;
       mkdir (path, 0700);
+      path = realloc(path, strlen(path)+strlen("/work")+1);
       strcat (path, "/work");
       mkdir (path, 0700);
       free (lo.workdir);
